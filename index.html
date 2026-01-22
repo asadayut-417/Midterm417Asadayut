@@ -8,8 +8,10 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <link rel="stylesheet" href="css/leaflet.css">
         <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
         <link rel="stylesheet" href="css/qgis2web.css">
         <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
         <link rel="stylesheet" href="css/filter.css">
 <link rel="stylesheet" href="css/nouislider.min.css">
         <link rel="stylesheet" href="css/leaflet.photon.css">
@@ -30,6 +32,7 @@
         <script src="js/qgis2web_expressions.js"></script>
         <script src="js/leaflet.js"></script>
         <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
         <script src="js/leaflet-svg-shape-markers.min.js"></script>
         <script src="js/leaflet.rotatedMarker.js"></script>
         <script src="js/leaflet.pattern.js"></script>
@@ -40,6 +43,7 @@
         <script src="js/labels.js"></script>
         <script src="js/leaflet.photon.js"></script>
         <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet-search.js"></script>
         <script src="js/tailDT.js"></script>
 <script src="js/nouislider.min.js"></script>
 <script src="js/wNumb.js"></script>
@@ -63,7 +67,7 @@
             }
         }
         var map = L.map('map', {
-            zoomControl:false, maxZoom:28, minZoom:1
+            zoomControl:false, maxZoom:28, minZoom:2
         })
         var hash = new L.Hash(map);
         map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
@@ -132,6 +136,7 @@
         var zoomControl = L.control.zoom({
             position: 'topleft'
         }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
         var measureControl = new L.Control.Measure({
             position: 'topleft',
             primaryLengthUnit: 'meters',
@@ -154,7 +159,7 @@
             pane: 'pane_GoogleSatellite_0',
             opacity: 1.0,
             attribution: '',
-            minZoom: 1,
+            minZoom: 2,
             maxZoom: 28,
             minNativeZoom: 0,
             maxNativeZoom: 18
@@ -237,12 +242,11 @@
                         <td colspan="2"><strong>name</strong><br />' + (feature.properties['name'] !== null ? autolinker.link(String(feature.properties['name']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
                     </tr>\
                     <tr>\
-                        <th scope="row">picture</th>\
-                        <td>' + (feature.properties['picture'] !== null ? autolinker.link(String(feature.properties['picture']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                        <td class="visible-with-data" id="picture" colspan="2"><strong>picture</strong><br />' + (feature.properties['picture'] !== null ? autolinker.link(String(feature.properties['picture']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
                     </tr>\
                     <tr>\
                         <th scope="row">distance</th>\
-                        <td>' + (feature.properties['distance'] !== null ? autolinker.link(String(feature.properties['distance']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                        <td class="visible-with-data" id="distance">' + (feature.properties['distance'] !== null ? autolinker.link(String(feature.properties['distance']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
                     </tr>\
                 </table>';
             var content = removeEmptyRowsFromPopupContent(popupContent, feature);
@@ -422,6 +426,16 @@
               addLabel(layer, i);
               i++;
         });
+        map.addControl(new L.Control.Search({
+            layer: layer_Street_2,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'picture'}));
+        if (typeof url === 'undefined') {
+            document.getElementsByClassName('search-button')[0].className += ' fa fa-binoculars';
+        } else {
+            document.getElementsByClassName('search-button')[1].className += ' fa fa-binoculars';
+        }
         var mapDiv = document.getElementById('map');
         var row = document.createElement('div');
         row.className="row";
@@ -441,7 +455,7 @@
         document.getElementById("all").appendChild(col1);
         document.getElementById("all").appendChild(col2);
         col1.appendChild(mapDiv)
-        var Filters = {"id": "int","distance": "real","name": "str","picture": "str"};
+        var Filters = {"id": "int","name": "str","picture": "str"};
         function filterFunc() {
           map.eachLayer(function(lyr){
           if ("options" in lyr && "dataVar" in lyr["options"]){
@@ -608,38 +622,6 @@
             }
             val_id = document.getElementById('val_id');
             val_id.innerHTML = values.join(' - ');
-                filterFunc()
-            });
-            document.getElementById("menu").appendChild(
-                document.createElement("div"));
-            var div_distance = document.createElement("div");
-            div_distance.id = "div_distance";
-            div_distance.className = "slider";
-            document.getElementById("menu").appendChild(div_distance);
-            var lab_distance = document.createElement('div');
-            lab_distance.innerHTML  = 'distance: <span id="val_distance"></span>';
-            lab_distance.className = 'filterlabel';
-            document.getElementById("menu").appendChild(lab_distance);
-            var reset_distance = document.createElement('div');
-            reset_distance.innerHTML = 'clear filter';
-            reset_distance.className = 'filterlabel';
-            lab_distance.className = 'filterlabel';
-            reset_distance.onclick = function() {
-                sel_distance.noUiSlider.reset();
-            };
-            document.getElementById("menu").appendChild(reset_distance);
-            var sel_distance = document.getElementById('div_distance');
-            noUiSlider.create(sel_distance, {
-                connect: true,
-                start: [423.486, 2843.871],
-                range: {
-                min: 423.486,
-                max: 2843.871
-                }
-            });
-            sel_distance.noUiSlider.on('update', function (values) {
-            val_distance = document.getElementById('val_distance');
-            val_distance.innerHTML = values.join(' - ');
                 filterFunc()
             });
             document.getElementById("menu").appendChild(
